@@ -2,6 +2,18 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Camera usage -->
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to let you capture photos for your journal.</string>
+
+	<!-- Gallery / photo library usage -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need photo library access to let you choose pictures for your journal.</string>
+
+	<!-- Notifications -->
+	<key>NSUserNotificationUsageDescription</key>
+	<string>We use notifications to remind you about your journal entries.</string>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -31,8 +43,7 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
