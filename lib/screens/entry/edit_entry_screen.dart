@@ -9,8 +9,9 @@ class EditEntry extends StatefulWidget {
 }
 
 class _EditEntryState extends State<EditEntry> {
-  final TextEditingController _titleController =
-      TextEditingController(text: "Morning Reflections");
+  final TextEditingController _titleController = TextEditingController(
+    text: "Morning Reflections",
+  );
   final TextEditingController _contentController = TextEditingController(
     text:
         "Started my day with coffee and gratitude. The sunrise was beautiful and reminded me of how blessed I am to witness another day. I am feeling particularly grateful for my health, my family, and the small moments that bring joy. Today I want to focus on being present and mindful in each interaction.",
@@ -70,8 +71,10 @@ class _EditEntryState extends State<EditEntry> {
                 decoration: const InputDecoration(
                   labelText: "Title",
                   border: OutlineInputBorder(),
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -81,7 +84,9 @@ class _EditEntryState extends State<EditEntry> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black.withOpacity(0.08)),
+                  border: Border.all(
+                    color: Colors.black.withValues(alpha: 0.08),
+                  ),
                   boxShadow: const [
                     BoxShadow(
                       color: Color(0x0C000000),
@@ -95,7 +100,8 @@ class _EditEntryState extends State<EditEntry> {
                   children: [
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(16)),
+                        top: Radius.circular(16),
+                      ),
                       child: Image.network(
                         imageUrl,
                         height: 180,
@@ -106,8 +112,10 @@ class _EditEntryState extends State<EditEntry> {
                       leading: const Icon(Icons.camera_alt_outlined),
                       title: const Text("Take New Photo"),
                       onTap: () async {
-                        final result =
-                            await Navigator.pushNamed(context, '/take_photo');
+                        final result = await Navigator.pushNamed(
+                          context,
+                          '/take_photo',
+                        );
                         if (result != null && result is String) {
                           setState(() {
                             imageUrl = result;
@@ -120,7 +128,9 @@ class _EditEntryState extends State<EditEntry> {
                       title: const Text("Change Photo"),
                       onTap: () async {
                         final result = await Navigator.pushNamed(
-                            context, '/choose_from_gallery');
+                          context,
+                          '/choose_from_gallery',
+                        );
                         if (result != null && result is String) {
                           setState(() {
                             imageUrl = result;

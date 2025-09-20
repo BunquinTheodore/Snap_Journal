@@ -25,7 +25,7 @@ class _TakePhotoState extends State<TakePhoto> {
     try {
       // Get available cameras
       _cameras = await availableCameras();
-      
+
       if (_cameras == null || _cameras!.isEmpty) {
         setState(() {
           _errorMessage = "No cameras available";
@@ -41,7 +41,7 @@ class _TakePhotoState extends State<TakePhoto> {
       );
 
       await _cameraController!.initialize();
-      
+
       if (mounted) {
         setState(() {
           _isInitialized = true;
@@ -67,16 +67,18 @@ class _TakePhotoState extends State<TakePhoto> {
       });
 
       final XFile photo = await _cameraController!.takePicture();
-      
+
       // Return the photo path to the previous screen
       if (mounted) {
         Navigator.pop(context, photo.path);
       }
     } catch (e) {
       debugPrint("Error capturing photo: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to capture photo: $e")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Failed to capture photo: $e")));
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -97,7 +99,9 @@ class _TakePhotoState extends State<TakePhoto> {
       await _cameraController?.dispose();
 
       // Switch between front and back camera
-      final currentCameraIndex = _cameras!.indexOf(_cameraController!.description);
+      final currentCameraIndex = _cameras!.indexOf(
+        _cameraController!.description,
+      );
       final newCameraIndex = (currentCameraIndex + 1) % _cameras!.length;
 
       _cameraController = CameraController(
@@ -134,17 +138,11 @@ class _TakePhotoState extends State<TakePhoto> {
         child: Stack(
           children: [
             // Camera preview or error message
-            Positioned.fill(
-              child: _buildCameraPreview(),
-            ),
+            Positioned.fill(child: _buildCameraPreview()),
 
             // Grid overlay (3x3) - only show when camera is initialized
             if (_isInitialized)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: GridPainter(),
-                ),
-              ),
+              Positioned.fill(child: CustomPaint(painter: GridPainter())),
 
             // Top bar with back button and camera switch
             Positioned(
@@ -155,12 +153,22 @@ class _TakePhotoState extends State<TakePhoto> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white, size: 28),
+                    icon: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 28,
+                    ),
                     onPressed: () => Navigator.pop(context),
                   ),
-                  if (_cameras != null && _cameras!.length > 1 && _isInitialized)
+                  if (_cameras != null &&
+                      _cameras!.length > 1 &&
+                      _isInitialized)
                     IconButton(
-                      icon: const Icon(Icons.flip_camera_ios, color: Colors.white, size: 28),
+                      icon: const Icon(
+                        Icons.flip_camera_ios,
+                        color: Colors.white,
+                        size: 28,
+                      ),
                       onPressed: _switchCamera,
                     ),
                 ],
@@ -235,8 +243,8 @@ class _TakePhotoState extends State<TakePhoto> {
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: _isInitialized ? Colors.white : Colors.grey, 
-            width: 4
+            color: _isInitialized ? Colors.white : Colors.grey,
+            width: 4,
           ),
         ),
         child: Container(
@@ -272,21 +280,13 @@ class GridPainter extends CustomPainter {
     // Vertical lines
     final dx = size.width / 3;
     for (int i = 1; i < 3; i++) {
-      canvas.drawLine(
-        Offset(dx * i, 0),
-        Offset(dx * i, size.height),
-        paint,
-      );
+      canvas.drawLine(Offset(dx * i, 0), Offset(dx * i, size.height), paint);
     }
 
     // Horizontal lines
     final dy = size.height / 3;
     for (int i = 1; i < 3; i++) {
-      canvas.drawLine(
-        Offset(0, dy * i),
-        Offset(size.width, dy * i),
-        paint,
-      );
+      canvas.drawLine(Offset(0, dy * i), Offset(size.width, dy * i), paint);
     }
   }
 
