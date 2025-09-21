@@ -32,6 +32,8 @@ dependencies:
   google_fonts: ^6.2.1       # Optional: Better typography
   uuid: ^4.1.0
 
+  file_picker: ^8.1.2
+
 
 dev_dependencies:
   flutter_test:

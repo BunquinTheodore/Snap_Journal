@@ -1,16 +1,39 @@
+import 'dart:io' show File; // Only available on mobile/desktop
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 
-class ChooseFromGallery extends StatelessWidget {
+class ChooseFromGallery extends StatefulWidget {
   const ChooseFromGallery({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Mock list of image URLs
-    final List<String> mockImages = List.generate(
-      9,
-      (index) => "https://placehold.co/200x200?text=Photo+${index + 1}",
+  State<ChooseFromGallery> createState() => _ChooseFromGalleryState();
+}
+
+class _ChooseFromGalleryState extends State<ChooseFromGallery> {
+  List<dynamic> _images = []; // File (mobile/desktop) or Uint8List (web)
+
+  Future<void> _pickImages() async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
     );
 
+    if (result != null) {
+      setState(() {
+        _images = result.files.map((file) {
+          if (kIsWeb) {
+            return file.bytes; // Uint8List
+          } else {
+            return File(file.path!); // File
+          }
+        }).toList();
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
@@ -24,73 +47,46 @@ class ChooseFromGallery extends StatelessWidget {
         backgroundColor: const Color(0xFFFFFBEA),
         foregroundColor: const Color(0xFF9F2D00),
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_photo_alternate),
+            onPressed: _pickImages,
+          ),
+        ],
       ),
       body: Column(
         children: [
-          // Device Gallery summary
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFF7EC), Color(0xFFFFFBEA)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Color(0xFFFFECD4)),
-            ),
-            child: Row(
-              children: const [
-                Icon(Icons.photo_library, color: Color(0xFF9F2D00)),
-                SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Device Gallery",
-                      style: TextStyle(
-                        color: Color(0xFF9F2D00),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      "9 photos available",
-                      style: TextStyle(color: Color(0xFFC93400), fontSize: 12),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
           // Gallery Grid
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: mockImages.length,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemBuilder: (context, index) {
-                final image = mockImages[index];
-                return GestureDetector(
-                  onTap: () {
-                    // Return selected image
-                    Navigator.pop(context, image);
-                  },
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      image,
-                      fit: BoxFit.cover,
+            child: _images.isEmpty
+                ? const Center(child: Text("No photos selected"))
+                : GridView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
                     ),
+                    itemCount: _images.length,
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                    itemBuilder: (context, index) {
+                      final img = _images[index];
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context, img); // Return selected image
+                        },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: kIsWeb
+                              ? Image.memory(img, fit: BoxFit.cover)
+                              : Image.file(img, fit: BoxFit.cover),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
 
           // Info banner
@@ -98,16 +94,13 @@ class ChooseFromGallery extends StatelessWidget {
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7EC).withOpacity(0.6),
+              color: const Color(0xFFFFF7EC).withValues(alpha: 0.6),
               borderRadius: BorderRadius.circular(12),
             ),
             child: const Text(
-              "📱 Mock gallery – Real app would access device photos",
+              "📱 Picked photos from device storage",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Color(0xFF64748B),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
             ),
           ),
         ],

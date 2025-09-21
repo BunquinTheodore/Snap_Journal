@@ -20,9 +20,9 @@ class ViewEntry extends StatelessWidget {
               Text(
                 "Morning Reflections",
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1D1D1F),
-                    ),
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF1D1D1F),
+                ),
               ),
               const SizedBox(height: 24),
               const EntryCard(imageUrl: "https://placehold.co/313x256"),
@@ -37,10 +37,10 @@ class ViewEntry extends StatelessWidget {
                 "being present and mindful in each \n"
                 "interaction.",
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      height: 1.62,
-                      fontSize: 16,
-                      color: const Color(0xFF1D1D1F),
-                    ),
+                  height: 1.62,
+                  fontSize: 16,
+                  color: const Color(0xFF1D1D1F),
+                ),
               ),
               const SizedBox(height: 24),
               const CapturedMomentCard(),
@@ -63,7 +63,10 @@ class EntryHeader extends StatelessWidget {
       height: 65,
       decoration: BoxDecoration(
         color: const Color(0xF2F8F9FB),
-        border: Border.all(color: Colors.black.withOpacity(0.08), width: 1.2),
+        border: Border.all(
+          color: Colors.black.withValues(alpha: 0.08),
+          width: 1.2,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -75,10 +78,10 @@ class EntryHeader extends StatelessWidget {
           Text(
             "Entry",
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: const Color(0xFF1D1D1F),
-                ),
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: const Color(0xFF1D1D1F),
+            ),
           ),
           const Row(
             children: [
@@ -109,9 +112,9 @@ class EntryMetaChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
-            ),
+          fontWeight: FontWeight.w600,
+          color: const Color(0xFF64748B),
+        ),
       ),
     );
   }
@@ -176,20 +179,20 @@ class CapturedMomentCard extends StatelessWidget {
           Text(
             "Moment Captured",
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: const Color(0xFF1D1D1F),
-                ),
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: const Color(0xFF1D1D1F),
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             "Every entry is a step in your mindfulness\njourney. Thank you for taking the time to\nreflect.",
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  fontSize: 14,
-                  height: 1.62,
-                  color: const Color(0xFF64748B),
-                ),
+              fontSize: 14,
+              height: 1.62,
+              color: const Color(0xFF64748B),
+            ),
           ),
         ],
       ),
@@ -207,7 +210,7 @@ class EntryStats extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0C000000),
@@ -239,19 +242,19 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-                color: const Color(0xFF64748B),
-              ),
+            fontWeight: FontWeight.w600,
+            fontSize: 14,
+            color: const Color(0xFF64748B),
+          ),
         ),
         const SizedBox(height: 8),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: const Color(0xFF1D1D1F),
-              ),
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            color: const Color(0xFF1D1D1F),
+          ),
         ),
       ],
     );
