@@ -1,10 +1,46 @@
+// lib/screens/entry/view_entry_screen.dart
+import 'dart:io';
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:snap_journal/models/entry_model.dart';
+import 'package:snap_journal/providers/entry_provider.dart';
 
 class ViewEntry extends StatelessWidget {
-  const ViewEntry({super.key});
+  final Entry entry;
+
+  const ViewEntry({super.key, required this.entry});
+
+  /// Manual formatter (same as HomePage)
+  String formatDateTime(DateTime dt) {
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final month = months[dt.month - 1];
+    final day = dt.day;
+    final year = dt.year;
+
+    int hour = dt.hour;
+    final minute = dt.minute.toString().padLeft(2, '0');
+    final ampm = hour >= 12 ? 'PM' : 'AM';
+    if (hour == 0) {
+      hour = 12;
+    } else if (hour > 12) {
+      hour = hour - 12;
+    }
+
+    return '$month $day, $year • $hour:$minute $ampm';
+  }
 
   @override
   Widget build(BuildContext context) {
+    final formattedDate = formatDateTime(entry.createdAt);
+    final wordCount =
+        entry.content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final readingTime = (wordCount / 200).ceil(); // ~200 wpm
+
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       body: SafeArea(
@@ -13,39 +49,43 @@ class ViewEntry extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const EntryHeader(),
-              const SizedBox(height: 24),
-              const EntryMetaChip(label: "Today"),
-              const SizedBox(height: 12),
-              Text(
-                "Morning Reflections",
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: const Color(0xFF1D1D1F),
-                ),
+              EntryHeader(
+                title: entry.title,
+                onDelete: () async {
+                  await context.read<EntryProvider>().deleteEntry(entry.id);
+                },
               ),
               const SizedBox(height: 24),
-              const EntryCard(imageUrl: "https://placehold.co/313x256"),
+              EntryMetaChip(label: formattedDate),
+              const SizedBox(height: 12),
+              Text(
+                entry.title,
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: const Color(0xFF1D1D1F),
+                    ),
+              ),
+              const SizedBox(height: 24),
+              if (entry.imagePath != null && entry.imagePath!.isNotEmpty)
+                EntryCard(imagePath: entry.imagePath!)
+              else
+                const SizedBox.shrink(),
               const SizedBox(height: 24),
               Text(
-                "Started my day with coffee and gratitude. \n"
-                "The sunrise was beautiful and reminded me \n"
-                "of how blessed I am to witness another day. \n"
-                "I am feeling particularly grateful for my \n"
-                "health, my family, and the small moments \n"
-                "that bring joy. Today I want to focus on \n"
-                "being present and mindful in each \n"
-                "interaction.",
+                entry.content,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  height: 1.62,
-                  fontSize: 16,
-                  color: const Color(0xFF1D1D1F),
-                ),
+                      height: 1.62,
+                      fontSize: 16,
+                      color: const Color(0xFF1D1D1F),
+                    ),
               ),
               const SizedBox(height: 24),
               const CapturedMomentCard(),
               const SizedBox(height: 24),
-              const EntryStats(),
+              EntryStats(
+                wordCount: wordCount,
+                readingTime: "$readingTime min",
+              ),
             ],
           ),
         ),
@@ -55,7 +95,10 @@ class ViewEntry extends StatelessWidget {
 }
 
 class EntryHeader extends StatelessWidget {
-  const EntryHeader({super.key});
+  final String title;
+  final Future<void> Function()? onDelete;
+
+  const EntryHeader({super.key, required this.title, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -64,31 +107,58 @@ class EntryHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xF2F8F9FB),
         border: Border.all(
-          color: Colors.black.withValues(alpha: 0.08),
-          width: 1.2,
-        ),
+            color: Colors.black.withValues(alpha: 0.08), width: 1.2),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(left: 16),
-            child: Icon(Icons.arrow_back, size: 20, color: Colors.black),
+          IconButton(
+            icon: const Icon(Icons.arrow_back, size: 20, color: Colors.black),
+            onPressed: () => Navigator.pop(context),
           ),
           Text(
             "Entry",
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: const Color(0xFF1D1D1F),
-            ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: const Color(0xFF1D1D1F),
+                ),
           ),
-          const Row(
+          Row(
             children: [
-              Icon(Icons.share, size: 20, color: Colors.black),
-              SizedBox(width: 16),
-              Icon(Icons.more_vert, size: 20, color: Colors.black),
-              SizedBox(width: 16),
+              IconButton(
+                icon: const Icon(Icons.delete, size: 20, color: Colors.black),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (dialogCtx) => AlertDialog(
+                      title: const Text("Delete Entry"),
+                      content: const Text(
+                          "Are you sure you want to delete this entry?"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogCtx),
+                          child: const Text("Cancel"),
+                        ),
+                        TextButton(
+                          onPressed: () async {
+                            Navigator.pop(dialogCtx); // close dialog
+                            if (onDelete != null) {
+                              await onDelete!();
+                            }
+                            Navigator.pop(context, true); // pop ViewEntry
+                          },
+                          child: const Text(
+                            "Delete",
+                            style: TextStyle(color: Colors.red),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 16),
             ],
           ),
         ],
@@ -112,17 +182,17 @@ class EntryMetaChip extends StatelessWidget {
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: const Color(0xFF64748B),
-        ),
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF64748B),
+            ),
       ),
     );
   }
 }
 
 class EntryCard extends StatelessWidget {
-  final String imageUrl;
-  const EntryCard({super.key, required this.imageUrl});
+  final String imagePath;
+  const EntryCard({super.key, required this.imagePath});
 
   @override
   Widget build(BuildContext context) {
@@ -143,10 +213,20 @@ class EntryCard extends StatelessWidget {
             offset: Offset(0, 4),
           ),
         ],
-        image: DecorationImage(
-          image: NetworkImage(imageUrl),
-          fit: BoxFit.cover,
-        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: kIsWeb
+            ? Image.network(
+                imagePath,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) =>
+                    Container(color: Colors.grey[200]),
+              )
+            : Image.file(
+                File(imagePath),
+                fit: BoxFit.cover,
+              ),
       ),
     );
   }
@@ -179,20 +259,20 @@ class CapturedMomentCard extends StatelessWidget {
           Text(
             "Moment Captured",
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-              color: const Color(0xFF1D1D1F),
-            ),
+                  fontWeight: FontWeight.w600,
+                  fontSize: 18,
+                  color: const Color(0xFF1D1D1F),
+                ),
           ),
           const SizedBox(height: 12),
           Text(
             "Every entry is a step in your mindfulness\njourney. Thank you for taking the time to\nreflect.",
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontSize: 14,
-              height: 1.62,
-              color: const Color(0xFF64748B),
-            ),
+                  fontSize: 14,
+                  height: 1.62,
+                  color: const Color(0xFF64748B),
+                ),
           ),
         ],
       ),
@@ -201,7 +281,11 @@ class CapturedMomentCard extends StatelessWidget {
 }
 
 class EntryStats extends StatelessWidget {
-  const EntryStats({super.key});
+  final int wordCount;
+  final String readingTime;
+
+  const EntryStats(
+      {super.key, required this.wordCount, required this.readingTime});
 
   @override
   Widget build(BuildContext context) {
@@ -221,9 +305,9 @@ class EntryStats extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: const [
-          _StatItem(label: "Words", value: "52"),
-          _StatItem(label: "Reading Time", value: "1 min"),
+        children: [
+          _StatItem(label: "Words", value: "$wordCount"),
+          _StatItem(label: "Reading Time", value: readingTime),
         ],
       ),
     );
@@ -242,19 +326,19 @@ class _StatItem extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 14,
-            color: const Color(0xFF64748B),
-          ),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: const Color(0xFF64748B),
+              ),
         ),
         const SizedBox(height: 8),
         Text(
           value,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 18,
-            color: const Color(0xFF1D1D1F),
-          ),
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+                color: const Color(0xFF1D1D1F),
+              ),
         ),
       ],
     );

@@ -1,35 +1,73 @@
 import 'package:flutter/material.dart';
-import 'package:snap_journal/services/notification_service.dart'; // 👈 import
+import 'package:hive/hive.dart';
+import 'package:snap_journal/models/entry_model.dart';
+import 'package:snap_journal/services/notification_service.dart';
 
 class EditEntry extends StatefulWidget {
-  const EditEntry({super.key});
+  final Entry? entry; // 👈 null = new entry, not null = editing existing
+
+  const EditEntry({super.key, this.entry});
 
   @override
   State<EditEntry> createState() => _EditEntryState();
 }
 
 class _EditEntryState extends State<EditEntry> {
-  final TextEditingController _titleController = TextEditingController(
-    text: "Morning Reflections",
-  );
-  final TextEditingController _contentController = TextEditingController(
-    text:
-        "Started my day with coffee and gratitude. The sunrise was beautiful and reminded me of how blessed I am to witness another day. I am feeling particularly grateful for my health, my family, and the small moments that bring joy. Today I want to focus on being present and mindful in each interaction.",
-  );
+  late TextEditingController _titleController;
+  late TextEditingController _contentController;
+  late String imageUrl;
 
-  String imageUrl = "https://placehold.co/315x192";
+  @override
+  void initState() {
+    super.initState();
 
-  void _saveEntry(BuildContext context) {
-    // TODO: Save updated entry in Hive
+    // ✅ Load existing values if editing
+    _titleController = TextEditingController(text: widget.entry?.title ?? "");
+    _contentController = TextEditingController(text: widget.entry?.content ?? "");
+    imageUrl = widget.entry?.imagePath ?? "https://placehold.co/315x192";
+  }
 
-    // 👇 Show notification
+  Future<void> _saveEntry(BuildContext context) async {
+    final box = Hive.box<Entry>('entries');
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    if (title.isEmpty && content.isEmpty) {
+      // ✅ Prevent saving empty entries
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please add a title or content.")),
+      );
+      return;
+    }
+
+    if (widget.entry != null) {
+      // ✨ Update existing entry
+      widget.entry!
+        ..title = title.isEmpty ? "Untitled Entry" : title
+        ..content = content
+        ..imagePath = imageUrl
+        ..save();
+    } else {
+      // ✨ Create new entry
+      final newEntry = Entry(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        title: title.isEmpty ? "Untitled Entry" : title,
+        content: content,
+        imagePath: imageUrl,
+        createdAt: DateTime.now(),
+      );
+      await box.add(newEntry);
+    }
+
+    if (!mounted) return; // ✅ Guard before using context
+
+    // ✅ Show notification
     NotificationService().showNotification(
-      title: "Entry Updated",
-      body: "Your journal entry was successfully updated!",
+      title: widget.entry == null ? "New Entry" : "Entry Updated",
+      body: "Your journal entry was successfully saved!",
     );
 
-    // Close screen
-    Navigator.pop(context);
+    Navigator.pop(context); // ✅ Close screen
   }
 
   @override
@@ -37,19 +75,22 @@ class _EditEntryState extends State<EditEntry> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text("Edit Entry"),
+        title: Text(widget.entry == null ? "New Entry" : "Edit Entry"),
         backgroundColor: const Color(0xFFF8FAFC),
         elevation: 0,
         actions: [
-          TextButton(
-            onPressed: () => _saveEntry(context), // 👈 use save function
+          TextButton.icon(
+            onPressed: () => _saveEntry(context),
+            icon: const Icon(Icons.check, size: 18, color: Colors.white),
+            label: const Text(
+              "Save",
+              style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
+            ),
             style: TextButton.styleFrom(
               backgroundColor: const Color(0xFF007AFF),
-              foregroundColor: Colors.white,
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
-            child: const Text("Save"),
           ),
           const SizedBox(width: 12),
         ],
@@ -69,12 +110,9 @@ class _EditEntryState extends State<EditEntry> {
                   color: Color(0xFF1D1D1F),
                 ),
                 decoration: const InputDecoration(
-                  labelText: "Title",
+                  hintText: "Entry title...",
                   border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
+                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
               const SizedBox(height: 24),
@@ -99,9 +137,7 @@ class _EditEntryState extends State<EditEntry> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(16),
-                      ),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       child: Image.network(
                         imageUrl,
                         height: 180,
@@ -112,14 +148,9 @@ class _EditEntryState extends State<EditEntry> {
                       leading: const Icon(Icons.camera_alt_outlined),
                       title: const Text("Take New Photo"),
                       onTap: () async {
-                        final result = await Navigator.pushNamed(
-                          context,
-                          '/take_photo',
-                        );
+                        final result = await Navigator.pushNamed(context, '/take_photo');
                         if (result != null && result is String) {
-                          setState(() {
-                            imageUrl = result;
-                          });
+                          setState(() => imageUrl = result);
                         }
                       },
                     ),
@@ -127,14 +158,10 @@ class _EditEntryState extends State<EditEntry> {
                       leading: const Icon(Icons.photo_library_outlined),
                       title: const Text("Change Photo"),
                       onTap: () async {
-                        final result = await Navigator.pushNamed(
-                          context,
-                          '/choose_from_gallery',
-                        );
+                        final result =
+                            await Navigator.pushNamed(context, '/choose_from_gallery');
                         if (result != null && result is String) {
-                          setState(() {
-                            imageUrl = result;
-                          });
+                          setState(() => imageUrl = result);
                         }
                       },
                     ),
@@ -148,11 +175,11 @@ class _EditEntryState extends State<EditEntry> {
                 controller: _contentController,
                 maxLines: null,
                 decoration: InputDecoration(
-                  labelText: "Your entry",
-                  alignLabelWithHint: true,
+                  hintText: "What is on your mind today?",
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 ),
               ),
             ],

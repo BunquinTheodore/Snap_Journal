@@ -76,7 +76,8 @@ class SnapJournalApp extends StatelessWidget {
             builder = (context) => const TakePhoto();
             break;
           case '/view_entry':
-            builder = (context) => const ViewEntry();
+            final entry = settings.arguments as Entry; // 👈 Expect Entry here
+            builder = (context) => ViewEntry(entry: entry);
             break;
           default:
             builder = (context) => const HomePage();

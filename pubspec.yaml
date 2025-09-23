@@ -24,6 +24,7 @@ dependencies:
   image_picker: ^1.1.2       # For gallery and camera access
   camera: ^0.11.0+2          # Full camera support
   flutter_local_notifications: ^17.2.3  # Local notifications
+  intl: ^0.19.0   # 👈 add this line
 
   # State management
   provider: ^6.1.2

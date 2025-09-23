@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart'; // ✅ for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:snap_journal/models/entry_model.dart';
@@ -28,25 +29,28 @@ class _AddNewEntryState extends State<AddNewEntry> {
     _imageService = ImageService();
   }
 
-  void _pickFromGallery() async {
+  Future<void> _pickFromGallery() async {
     final file = await _imageService.pickFromGallery();
+    if (!mounted) return; // ✅ async safety
     if (file != null) {
       setState(() => _selectedImage = File(file.path));
     }
   }
 
-  void _takePhoto() async {
+  Future<void> _takePhoto() async {
     final file = await _imageService.takePhoto();
+    if (!mounted) return; // ✅ async safety
     if (file != null) {
       setState(() => _selectedImage = File(file.path));
     }
   }
 
-  void _saveEntry() {
+  Future<void> _saveEntry() async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
 
     if (title.isEmpty && content.isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please write something first.")),
       );
@@ -61,8 +65,8 @@ class _AddNewEntryState extends State<AddNewEntry> {
       createdAt: DateTime.now(),
     );
 
-    // ✅ Save entry using Provider
-    Provider.of<EntryProvider>(context, listen: false).addEntry(entry);
+    // ✅ Await provider save to ensure Hive finishes writing
+    await Provider.of<EntryProvider>(context, listen: false).addEntry(entry);
 
     // ✅ Show notification
     NotificationService().showNotification(
@@ -70,6 +74,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
       body: "Your entry was added successfully!",
     );
 
+    if (!mounted) return;
     Navigator.pop(context); // Close screen
   }
 
@@ -89,17 +94,15 @@ class _AddNewEntryState extends State<AddNewEntry> {
         elevation: 0,
         automaticallyImplyLeading: true,
         actions: [
-          TextButton.icon(
+          // ✅ More Material-consistent Save button
+          FilledButton.icon(
             onPressed: _saveEntry,
-            icon: const Icon(Icons.check, color: Colors.white, size: 18),
+            icon: const Icon(Icons.check, size: 18),
             label: const Text(
               "Save",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
-            style: TextButton.styleFrom(
+            style: FilledButton.styleFrom(
               backgroundColor: const Color(0xFF007AFF),
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -151,11 +154,17 @@ class _AddNewEntryState extends State<AddNewEntry> {
                   if (_selectedImage != null) ...[
                     ClipRRect(
                       borderRadius: BorderRadius.circular(12),
-                      child: Image.file(
-                        _selectedImage!,
-                        height: 180,
-                        fit: BoxFit.cover,
-                      ),
+                      child: kIsWeb
+                          ? Image.network(
+                              _selectedImage!.path,
+                              height: 180,
+                              fit: BoxFit.cover,
+                            )
+                          : Image.file(
+                              _selectedImage!,
+                              height: 180,
+                              fit: BoxFit.cover,
+                            ),
                     ),
                     const SizedBox(height: 16),
                   ],
@@ -199,10 +208,11 @@ class _AddNewEntryState extends State<AddNewEntry> {
             ),
             const SizedBox(height: 24),
 
-            // Entry content
+            // Entry content (✅ autosize instead of fixed 5 lines)
             TextField(
               controller: _contentController,
-              maxLines: 5,
+              minLines: 5,
+              maxLines: null,
               decoration: InputDecoration(
                 hintText: "What is on your mind today?",
                 hintStyle: const TextStyle(

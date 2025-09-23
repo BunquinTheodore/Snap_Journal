@@ -11,7 +11,6 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   String formatDateTime(DateTime dt) {
-    // Simple human-friendly formatter (no intl dependency)
     final months = [
       'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
       'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
@@ -82,7 +81,18 @@ class HomePage extends StatelessWidget {
         : (entry.imagePath != null ? 'Photo entry' : '');
 
     return InkWell(
-      onTap: () => Navigator.pushNamed(context, '/view_entry', arguments: entry),
+      onTap: () async {
+        final deleted = await Navigator.pushNamed(
+          context,
+          '/view_entry',
+          arguments: entry,
+        );
+
+        // If ViewEntry popped with `true`, remove entry from provider
+        if (deleted == true) {
+          await context.read<EntryProvider>().deleteEntry(entry.id);
+        }
+      },
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
@@ -100,10 +110,9 @@ class HomePage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (entry.imagePath != null && entry.imagePath!.isNotEmpty) ...[
-              // NOTE: Image.file requires dart:io (works on mobile/desktop). If you run on Web,
-              // replace with Image.network(entry.imagePath!) or use ImageService helper.
               ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(16)),
                 child: kIsWeb
                     ? Image.network(
                         entry.imagePath!,
