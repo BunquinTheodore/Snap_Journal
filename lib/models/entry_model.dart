@@ -26,4 +26,21 @@ class Entry extends HiveObject {
     this.imagePath,
     required this.createdAt,
   });
+
+  /// ✅ Add copyWith for safe updates
+  Entry copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? imagePath,
+    DateTime? createdAt,
+  }) {
+    return Entry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      imagePath: imagePath ?? this.imagePath,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

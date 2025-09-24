@@ -2,52 +2,75 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive/hive.dart';
 import 'package:snap_journal/models/entry_model.dart';
+import 'package:snap_journal/services/notification_service.dart';
 
 class EntryProvider extends ChangeNotifier {
-  // NOTE: keep this name in sync with the box name you open in main.dart
-  static const String _boxName = "entries"; // <- changed to match main.dart
+  static const String _boxName = "entries"; // keep consistent with main.dart
+  Box<Entry>? _box;
 
   List<Entry> _entries = [];
   List<Entry> get entries => _entries;
 
-  /// Load entries from Hive box
+  /// Ensure the Hive box is open
+  Future<Box<Entry>> _openBox() async {
+    _box ??= await Hive.openBox<Entry>(_boxName);
+    return _box!;
+  }
+
+  /// Reload entries into memory
+  Future<void> _reloadEntries() async {
+    final box = await _openBox();
+    _entries = box.values.toList();
+    notifyListeners();
+  }
+
+  /// Load entries on app start
   Future<void> loadEntries() async {
-    final box = await Hive.openBox<Entry>(_boxName);
-    _entries = box.values.toList();
-    notifyListeners();
+    await _reloadEntries();
   }
 
-  /// Add new entry (stores using entry.id as key)
+  /// Add a new entry
   Future<void> addEntry(Entry entry) async {
-    final box = await Hive.openBox<Entry>(_boxName);
+    final box = await _openBox();
     await box.put(entry.id, entry);
-    _entries = box.values.toList();
-    notifyListeners();
+    await _reloadEntries();
+
+    NotificationService.showNotification(
+      title: "SnapJournal",
+      body: "New entry added at ${DateTime.now()}",
+    );
   }
 
-  /// Update an existing entry (overwrite by id)
+  /// Update an existing entry
   Future<void> updateEntry(Entry entry) async {
-    final box = await Hive.openBox<Entry>(_boxName);
-    await box.put(entry.id, entry); // overwrite
-    _entries = box.values.toList();
-    notifyListeners();
+    final box = await _openBox();
+    await box.put(entry.id, entry); // overwrite existing
+    await _reloadEntries();
+
+    NotificationService.showNotification(
+      title: "SnapJournal",
+      body: "Entry updated at ${DateTime.now()}",
+    );
   }
 
   /// Delete an entry by id
   Future<void> deleteEntry(String id) async {
-    final box = await Hive.openBox<Entry>(_boxName);
+    final box = await _openBox();
     await box.delete(id);
-    _entries = box.values.toList();
-    notifyListeners();
+    await _reloadEntries();
+
+    NotificationService.showNotification(
+      title: "SnapJournal",
+      body: "Entry deleted at ${DateTime.now()}",
+    );
   }
 
-  /// Convenience: delete by Entry object
+  /// Delete by Entry object
   Future<void> removeEntry(Entry entry) async {
-    // Reuse deleteEntry to avoid duplicating logic
     await deleteEntry(entry.id);
   }
 
-  /// Find a single entry by id
+  /// Find entry by id
   Entry? getEntry(String id) {
     try {
       return _entries.firstWhere((e) => e.id == id);
@@ -55,4 +78,7 @@ class EntryProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  /// Alias: getById (for consistency with your ViewEntry code)
+  Entry? getById(String id) => getEntry(id);
 }

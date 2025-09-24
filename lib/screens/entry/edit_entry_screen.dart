@@ -1,12 +1,13 @@
+// lib/screens/entry/edit_entry_screen.dart
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 import 'package:snap_journal/models/entry_model.dart';
-import 'package:snap_journal/services/notification_service.dart';
+import 'package:snap_journal/providers/entry_provider.dart';
 
 class EditEntry extends StatefulWidget {
-  final Entry? entry; // 👈 null = new entry, not null = editing existing
+  final String entryId; // ✅ always pass ID
 
-  const EditEntry({super.key, this.entry});
+  const EditEntry({super.key, required this.entryId});
 
   @override
   State<EditEntry> createState() => _EditEntryState();
@@ -20,35 +21,34 @@ class _EditEntryState extends State<EditEntry> {
   @override
   void initState() {
     super.initState();
-
-    // ✅ Load existing values if editing
-    _titleController = TextEditingController(text: widget.entry?.title ?? "");
-    _contentController = TextEditingController(text: widget.entry?.content ?? "");
-    imageUrl = widget.entry?.imagePath ?? "https://placehold.co/315x192";
+    _titleController = TextEditingController();
+    _contentController = TextEditingController();
+    imageUrl = "https://placehold.co/315x192";
   }
 
-  Future<void> _saveEntry(BuildContext context) async {
-    final box = Hive.box<Entry>('entries');
+  Future<void> _saveEntry(BuildContext context, Entry? entry) async {
     final title = _titleController.text.trim();
     final content = _contentController.text.trim();
 
     if (title.isEmpty && content.isEmpty) {
-      // ✅ Prevent saving empty entries
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please add a title or content.")),
       );
       return;
     }
 
-    if (widget.entry != null) {
+    final provider = Provider.of<EntryProvider>(context, listen: false);
+
+    if (entry != null) {
       // ✨ Update existing entry
-      widget.entry!
+      entry
         ..title = title.isEmpty ? "Untitled Entry" : title
         ..content = content
-        ..imagePath = imageUrl
-        ..save();
+        ..imagePath = imageUrl;
+
+      await provider.updateEntry(entry);
     } else {
-      // ✨ Create new entry
+      // ✨ Create new entry (fallback, though usually EditEntry always has one)
       final newEntry = Entry(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         title: title.isEmpty ? "Untitled Entry" : title,
@@ -56,38 +56,50 @@ class _EditEntryState extends State<EditEntry> {
         imagePath: imageUrl,
         createdAt: DateTime.now(),
       );
-      await box.add(newEntry);
+      await provider.addEntry(newEntry);
     }
 
-    if (!mounted) return; // ✅ Guard before using context
-
-    // ✅ Show notification
-    NotificationService().showNotification(
-      title: widget.entry == null ? "New Entry" : "Entry Updated",
-      body: "Your journal entry was successfully saved!",
-    );
-
-    Navigator.pop(context); // ✅ Close screen
+    if (!mounted) return;
+    Navigator.pop(context); // ✅ Close screen after save
   }
 
   @override
   Widget build(BuildContext context) {
+    final entry = context.watch<EntryProvider>().getEntry(widget.entryId);
+
+    // Handle missing entry
+    if (entry == null) {
+      return const Scaffold(
+        body: Center(child: Text("Entry not found")),
+      );
+    }
+
+    // Sync controllers once when entry is loaded
+    _titleController.text = entry.title;
+    _contentController.text = entry.content;
+    if (entry.imagePath != null && entry.imagePath!.isNotEmpty) {
+      imageUrl = entry.imagePath!;
+    }
+
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: Text(widget.entry == null ? "New Entry" : "Edit Entry"),
-        backgroundColor: const Color(0xFFF8FAFC),
+        title: const Text("Edit Entry"),
+        backgroundColor: colorScheme.background,
         elevation: 0,
         actions: [
           TextButton.icon(
-            onPressed: () => _saveEntry(context),
+            onPressed: () => _saveEntry(context, entry),
             icon: const Icon(Icons.check, size: 18, color: Colors.white),
             label: const Text(
               "Save",
               style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white),
             ),
             style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF007AFF),
+              backgroundColor: colorScheme.primary,
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
@@ -104,15 +116,16 @@ class _EditEntryState extends State<EditEntry> {
               // Title field
               TextField(
                 controller: _titleController,
-                style: const TextStyle(
+                style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
-                  color: Color(0xFF1D1D1F),
+                  color: colorScheme.onSurface,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: "Entry title...",
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+                  border: const OutlineInputBorder(),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 ),
               ),
               const SizedBox(height: 24),
@@ -120,16 +133,16 @@ class _EditEntryState extends State<EditEntry> {
               // Image + actions
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: Colors.black.withValues(alpha: 0.08),
+                    color: colorScheme.outlineVariant,
                   ),
-                  boxShadow: const [
+                  boxShadow: [
                     BoxShadow(
-                      color: Color(0x0C000000),
+                      color: colorScheme.shadow.withOpacity(0.08),
                       blurRadius: 2,
-                      offset: Offset(0, 1),
+                      offset: const Offset(0, 1),
                     ),
                   ],
                 ),
@@ -145,8 +158,8 @@ class _EditEntryState extends State<EditEntry> {
                       ),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.camera_alt_outlined),
-                      title: const Text("Take New Photo"),
+                      leading: Icon(Icons.camera_alt_outlined, color: colorScheme.primary),
+                      title: Text("Take New Photo", style: TextStyle(color: colorScheme.onSurface)),
                       onTap: () async {
                         final result = await Navigator.pushNamed(context, '/take_photo');
                         if (result != null && result is String) {
@@ -155,8 +168,8 @@ class _EditEntryState extends State<EditEntry> {
                       },
                     ),
                     ListTile(
-                      leading: const Icon(Icons.photo_library_outlined),
-                      title: const Text("Change Photo"),
+                      leading: Icon(Icons.photo_library_outlined, color: colorScheme.primary),
+                      title: Text("Change Photo", style: TextStyle(color: colorScheme.onSurface)),
                       onTap: () async {
                         final result =
                             await Navigator.pushNamed(context, '/choose_from_gallery');
@@ -174,8 +187,10 @@ class _EditEntryState extends State<EditEntry> {
               TextField(
                 controller: _contentController,
                 maxLines: null,
+                style: TextStyle(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: "What is on your mind today?",
+                  hintStyle: TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),

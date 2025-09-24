@@ -8,9 +8,9 @@ import 'package:snap_journal/models/entry_model.dart';
 import 'package:snap_journal/providers/entry_provider.dart';
 
 class ViewEntry extends StatelessWidget {
-  final Entry entry;
+  final String entryId;
 
-  const ViewEntry({super.key, required this.entry});
+  const ViewEntry({super.key, required this.entryId});
 
   /// Manual formatter (same as HomePage)
   String formatDateTime(DateTime dt) {
@@ -36,13 +36,24 @@ class ViewEntry extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final entry = context.watch<EntryProvider>().getEntry(entryId);
+
+    if (entry == null) {
+      return const Scaffold(
+        body: Center(child: Text("Entry not found")),
+      );
+    }
+
+    final colors = Theme.of(context).colorScheme;
     final formattedDate = formatDateTime(entry.createdAt);
-    final wordCount =
-        entry.content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
+    final wordCount = entry.content
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .length;
     final readingTime = (wordCount / 200).ceil(); // ~200 wpm
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colors.background,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -51,6 +62,7 @@ class ViewEntry extends StatelessWidget {
             children: [
               EntryHeader(
                 title: entry.title,
+                entry: entry,
                 onDelete: () async {
                   await context.read<EntryProvider>().deleteEntry(entry.id);
                 },
@@ -62,7 +74,7 @@ class ViewEntry extends StatelessWidget {
                 entry.title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: const Color(0xFF1D1D1F),
+                      color: colors.onBackground,
                     ),
               ),
               const SizedBox(height: 24),
@@ -76,7 +88,7 @@ class ViewEntry extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       height: 1.62,
                       fontSize: 16,
-                      color: const Color(0xFF1D1D1F),
+                      color: colors.onBackground,
                     ),
               ),
               const SizedBox(height: 24),
@@ -96,24 +108,34 @@ class ViewEntry extends StatelessWidget {
 
 class EntryHeader extends StatelessWidget {
   final String title;
+  final Entry entry;
   final Future<void> Function()? onDelete;
 
-  const EntryHeader({super.key, required this.title, this.onDelete});
+  const EntryHeader({
+    super.key,
+    required this.title,
+    required this.entry,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       height: 65,
       decoration: BoxDecoration(
-        color: const Color(0xF2F8F9FB),
+        color: colors.surface,
         border: Border.all(
-            color: Colors.black.withValues(alpha: 0.08), width: 1.2),
+          color: colors.outlineVariant,
+          width: 1.2,
+        ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, size: 20, color: Colors.black),
+            icon: Icon(Icons.arrow_back, size: 20, color: colors.onSurface),
             onPressed: () => Navigator.pop(context),
           ),
           Text(
@@ -121,20 +143,33 @@ class EntryHeader extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color: const Color(0xFF1D1D1F),
+                  color: colors.onBackground,
                 ),
           ),
           Row(
             children: [
+              // ✏️ EDIT BUTTON
               IconButton(
-                icon: const Icon(Icons.delete, size: 20, color: Colors.black),
+                icon: Icon(Icons.edit, size: 20, color: colors.onSurface),
+                onPressed: () {
+                  Navigator.pushNamed(
+                    context,
+                    '/edit_entry',
+                    arguments: entry.id, // Pass the current entry
+                  );
+                },
+              ),
+              // 🗑️ DELETE BUTTON
+              IconButton(
+                icon: Icon(Icons.delete, size: 20, color: colors.error),
                 onPressed: () {
                   showDialog(
                     context: context,
                     builder: (dialogCtx) => AlertDialog(
                       title: const Text("Delete Entry"),
                       content: const Text(
-                          "Are you sure you want to delete this entry?"),
+                        "Are you sure you want to delete this entry?",
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(dialogCtx),
@@ -148,9 +183,9 @@ class EntryHeader extends StatelessWidget {
                             }
                             Navigator.pop(context, true); // pop ViewEntry
                           },
-                          child: const Text(
+                          child: Text(
                             "Delete",
-                            style: TextStyle(color: Colors.red),
+                            style: TextStyle(color: colors.error),
                           ),
                         ),
                       ],
@@ -173,17 +208,19 @@ class EntryMetaChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
+        color: colors.surfaceVariant,
         borderRadius: BorderRadius.circular(50),
       ),
       child: Text(
         label,
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
-              color: const Color(0xFF64748B),
+              color: colors.onSurfaceVariant,
             ),
       ),
     );
@@ -237,11 +274,13 @@ class CapturedMomentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0x4CF1F4F8),
+        color: colors.primary.withOpacity(0.05),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -250,10 +289,10 @@ class CapturedMomentCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: const Color(0x190079FE),
+              color: colors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(50),
             ),
-            child: const Icon(Icons.camera_alt, color: Color(0xFF1D1D1F)),
+            child: Icon(Icons.camera_alt, color: colors.onPrimaryContainer),
           ),
           const SizedBox(height: 16),
           Text(
@@ -261,7 +300,7 @@ class CapturedMomentCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color: const Color(0xFF1D1D1F),
+                  color: colors.onBackground,
                 ),
           ),
           const SizedBox(height: 12),
@@ -271,7 +310,7 @@ class CapturedMomentCard extends StatelessWidget {
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   fontSize: 14,
                   height: 1.62,
-                  color: const Color(0xFF64748B),
+                  color: colors.onSurfaceVariant,
                 ),
           ),
         ],
@@ -289,12 +328,14 @@ class EntryStats extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black.withValues(alpha: 0.08)),
+        border: Border.all(color: colors.outlineVariant),
         boxShadow: const [
           BoxShadow(
             color: Color(0x0C000000),
@@ -321,6 +362,8 @@ class _StatItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Column(
       children: [
         Text(
@@ -328,7 +371,7 @@ class _StatItem extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: const Color(0xFF64748B),
+                color: colors.onSurfaceVariant,
               ),
         ),
         const SizedBox(height: 8),
@@ -337,7 +380,7 @@ class _StatItem extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: const Color(0xFF1D1D1F),
+                color: colors.onBackground,
               ),
         ),
       ],

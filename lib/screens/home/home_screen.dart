@@ -34,26 +34,28 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = context.watch<EntryProvider>().entries;
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "Snap Journal",
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF1D1D1F),
-          ),
+          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
         ),
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: colorScheme.background,
         elevation: 0,
       ),
       body: entries.isEmpty
-          ? const Center(
+          ? Center(
               child: Text(
                 "No journal entries yet.\nTap + to add your first one!",
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF64748B), fontSize: 16),
+                style: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontSize: 16,
+                ),
               ),
             )
           : ListView.separated(
@@ -62,18 +64,24 @@ class HomePage extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final entry = entries[index];
-                return _buildEntryCard(context, entry);
+                return _buildEntryCard(context, entry, colorScheme, textTheme);
               },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/add_new_entry'),
-        backgroundColor: const Color(0xFF007AFF),
-        child: const Icon(Icons.add, color: Colors.white),
+        backgroundColor: colorScheme.primary,
+        foregroundColor: colorScheme.onPrimary,
+        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildEntryCard(BuildContext context, Entry entry) {
+  Widget _buildEntryCard(
+    BuildContext context,
+    Entry entry,
+    ColorScheme colorScheme,
+    TextTheme textTheme,
+  ) {
     final created = entry.createdAt;
     final title = (entry.title.isNotEmpty) ? entry.title : 'Untitled';
     final contentPreview = entry.content.isNotEmpty
@@ -85,24 +93,23 @@ class HomePage extends StatelessWidget {
         final deleted = await Navigator.pushNamed(
           context,
           '/view_entry',
-          arguments: entry,
+          arguments: entry.id,
         );
 
-        // If ViewEntry popped with `true`, remove entry from provider
         if (deleted == true) {
           await context.read<EntryProvider>().deleteEntry(entry.id);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black.withValues(alpha: 0.05)),
-          boxShadow: const [
+          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+          boxShadow: [
             BoxShadow(
-              color: Color(0x0C000000),
+              color: colorScheme.shadow.withOpacity(0.05),
               blurRadius: 4,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -120,7 +127,7 @@ class HomePage extends StatelessWidget {
                         width: double.infinity,
                         fit: BoxFit.cover,
                         errorBuilder: (_, __, ___) =>
-                            Container(height: 160, color: Colors.grey[200]),
+                            Container(height: 160, color: colorScheme.surfaceVariant),
                       )
                     : Image.file(
                         File(entry.imagePath!),
@@ -137,10 +144,9 @@ class HomePage extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Color(0xFF1D1D1F),
+                      color: colorScheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -148,17 +154,17 @@ class HomePage extends StatelessWidget {
                     contentPreview,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 14,
-                      color: Color(0xFF64748B),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     formatDateTime(created),
-                    style: const TextStyle(
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
                       fontSize: 12,
-                      color: Color(0xFF94A3B8),
                     ),
                   ),
                 ],

@@ -14,23 +14,24 @@ import 'screens/home/home_screen.dart';
 import 'screens/notification/notification_screen.dart';
 import 'services/notification_service.dart';
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // ✅ Init Hive
   await Hive.initFlutter();
   Hive.registerAdapter(EntryAdapter());
-  await Hive.openBox<Entry>('entries'); // 👈 REQUIRED
+  await Hive.openBox<Entry>('entries'); // must match EntryProvider
 
   // ✅ Init Notifications
-  await NotificationService().init();
+  await NotificationService.initialize();
+
 
   // ✅ Lock orientation
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
-  
+
   runApp(
     ChangeNotifierProvider(
       create: (_) => EntryProvider()..loadEntries(),
@@ -47,51 +48,61 @@ class SnapJournalApp extends StatelessWidget {
     return MaterialApp(
       title: 'Snap Journal',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      themeMode: ThemeMode.system, // 🌙 Follows system theme
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       initialRoute: '/home',
 
-      // 🔥 Custom route generator with global animation
+      // 🔥 Global route generator
       onGenerateRoute: (settings) {
-        WidgetBuilder builder;
+        late final Widget page;
+
         switch (settings.name) {
           case '/home':
-            builder = (context) => const HomePage();
+            page = const HomePage();
             break;
+
           case '/add_new_entry':
-            builder = (context) => const AddNewEntry();
+            page = const AddNewEntry();
             break;
-          case '/choose_from_gallery':
-            builder = (context) => const ChooseFromGallery();
-            break;
+
           case '/edit_entry':
-            builder = (context) => const EditEntry();
+            final entryId = settings.arguments as String;
+            page = EditEntry(entryId: entryId);
             break;
-          case '/notification':
-            builder = (context) => const NotificationPage();
-            break;
-          case '/take_photo':
-            builder = (context) => const TakePhoto();
-            break;
+
           case '/view_entry':
-            final entry = settings.arguments as Entry; // 👈 Expect Entry here
-            builder = (context) => ViewEntry(entry: entry);
+            final entryId = settings.arguments as String;
+            page = ViewEntry(entryId: entryId);
             break;
+
+          case '/choose_from_gallery':
+            page = const ChooseFromGallery();
+            break;
+
+          case '/take_photo':
+            page = const TakePhoto();
+            break;
+
+          case '/notification':
+            page = const NotificationPage();
+            break;
+
           default:
-            builder = (context) => const HomePage();
+            page = const HomePage();
         }
 
+        // ✨ Custom transition for all routes
         return PageRouteBuilder(
           settings: settings,
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              builder(context),
+          pageBuilder: (context, animation, secondaryAnimation) => page,
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            // ✨ Global fade + scale animation
             final fade = Tween<double>(begin: 0, end: 1).animate(animation);
             final scale = Tween<double>(begin: 0.9, end: 1).animate(
-              CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              CurvedAnimation(
+                parent: animation,
+                curve: Curves.easeOutCubic,
+              ),
             );
 
             return FadeTransition(
@@ -104,3 +115,39 @@ class SnapJournalApp extends StatelessWidget {
     );
   }
 }
+
+/// 🌞 Light Theme
+final ThemeData _lightTheme = ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: Colors.indigo,
+    brightness: Brightness.light,
+  ),
+  textTheme: Typography.blackMountainView.apply(
+    fontFamily: 'Roboto',
+  ),
+  scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    foregroundColor: Color(0xFF1D1D1F),
+  ),
+  useMaterial3: true,
+);
+
+/// 🌙 Dark Theme
+final ThemeData _darkTheme = ThemeData(
+  colorScheme: ColorScheme.fromSeed(
+    seedColor: Colors.indigo,
+    brightness: Brightness.dark,
+  ),
+  textTheme: Typography.whiteMountainView.apply(
+    fontFamily: 'Roboto',
+  ),
+  scaffoldBackgroundColor: const Color(0xFF0F1115),
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.transparent,
+    elevation: 0,
+    foregroundColor: Colors.white,
+  ),
+  useMaterial3: true,
+);

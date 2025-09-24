@@ -6,7 +6,6 @@ import 'package:provider/provider.dart';
 import 'package:snap_journal/models/entry_model.dart';
 import 'package:snap_journal/providers/entry_provider.dart';
 import 'package:snap_journal/services/image_service.dart';
-import 'package:snap_journal/services/notification_service.dart';
 import 'package:uuid/uuid.dart';
 
 class AddNewEntry extends StatefulWidget {
@@ -31,7 +30,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
 
   Future<void> _pickFromGallery() async {
     final file = await _imageService.pickFromGallery();
-    if (!mounted) return; // ✅ async safety
+    if (!mounted) return;
     if (file != null) {
       setState(() => _selectedImage = File(file.path));
     }
@@ -39,7 +38,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
 
   Future<void> _takePhoto() async {
     final file = await _imageService.takePhoto();
-    if (!mounted) return; // ✅ async safety
+    if (!mounted) return;
     if (file != null) {
       setState(() => _selectedImage = File(file.path));
     }
@@ -57,7 +56,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
       return;
     }
 
-    final entry = Entry(
+    final newEntry = Entry(
       id: const Uuid().v4(),
       title: title.isEmpty ? "Untitled Entry" : title,
       content: content,
@@ -65,45 +64,35 @@ class _AddNewEntryState extends State<AddNewEntry> {
       createdAt: DateTime.now(),
     );
 
-    // ✅ Await provider save to ensure Hive finishes writing
-    await Provider.of<EntryProvider>(context, listen: false).addEntry(entry);
-
-    // ✅ Show notification
-    NotificationService().showNotification(
-      title: "New Journal Entry",
-      body: "Your entry was added successfully!",
-    );
+    await Provider.of<EntryProvider>(context, listen: false).addEntry(newEntry);
 
     if (!mounted) return;
-    Navigator.pop(context); // Close screen
+    Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: colorScheme.background,
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           "New Entry",
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF1D1D1F),
-          ),
+          style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
-        backgroundColor: const Color(0xF2F8F9FB),
+        backgroundColor: colorScheme.background,
         elevation: 0,
         automaticallyImplyLeading: true,
         actions: [
-          // ✅ More Material-consistent Save button
           FilledButton.icon(
             onPressed: _saveEntry,
             icon: const Icon(Icons.check, size: 18),
-            label: const Text(
-              "Save",
-              style: TextStyle(fontWeight: FontWeight.w600),
-            ),
+            label: const Text("Save"),
             style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFF007AFF),
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
               shape: const StadiumBorder(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             ),
@@ -116,13 +105,16 @@ class _AddNewEntryState extends State<AddNewEntry> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Entry title
+            // Title input
             TextField(
               controller: _titleController,
+              style: textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
               decoration: InputDecoration(
                 hintText: "Entry title...",
-                hintStyle: const TextStyle(
-                  color: Color(0xFF64748B),
+                hintStyle: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
                 ),
                 border: OutlineInputBorder(
@@ -134,20 +126,20 @@ class _AddNewEntryState extends State<AddNewEntry> {
             ),
             const SizedBox(height: 24),
 
-            // Add photo card
+            // Image picker
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                boxShadow: [
                   BoxShadow(
-                    color: Color(0x0C000000),
+                    color: colorScheme.shadow.withOpacity(0.05),
                     blurRadius: 4,
-                    offset: Offset(0, 2),
+                    offset: const Offset(0, 2),
                   ),
                 ],
-                border: Border.all(color: Colors.black12, width: 1),
+                border: Border.all(color: colorScheme.outline, width: 1),
               ),
               child: Column(
                 children: [
@@ -171,11 +163,11 @@ class _AddNewEntryState extends State<AddNewEntry> {
                   ElevatedButton(
                     onPressed: _takePhoto,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF8FAFC),
-                      foregroundColor: const Color(0xFF1D1D1F),
+                      backgroundColor: colorScheme.surface,
+                      foregroundColor: colorScheme.onSurface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: Colors.black12),
+                        side: BorderSide(color: colorScheme.outline),
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 24),
@@ -189,11 +181,11 @@ class _AddNewEntryState extends State<AddNewEntry> {
                   ElevatedButton(
                     onPressed: _pickFromGallery,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF8FAFC),
-                      foregroundColor: const Color(0xFF1D1D1F),
+                      backgroundColor: colorScheme.surface,
+                      foregroundColor: colorScheme.onSurface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: const BorderSide(color: Colors.black12),
+                        side: BorderSide(color: colorScheme.outline),
                       ),
                       padding: const EdgeInsets.symmetric(
                           vertical: 14, horizontal: 24),
@@ -208,15 +200,16 @@ class _AddNewEntryState extends State<AddNewEntry> {
             ),
             const SizedBox(height: 24),
 
-            // Entry content (✅ autosize instead of fixed 5 lines)
+            // Content
             TextField(
               controller: _contentController,
               minLines: 5,
               maxLines: null,
+              style: textTheme.bodyMedium,
               decoration: InputDecoration(
                 hintText: "What is on your mind today?",
-                hintStyle: const TextStyle(
-                  color: Color(0xFF64748B),
+                hintStyle: textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
@@ -227,33 +220,44 @@ class _AddNewEntryState extends State<AddNewEntry> {
             ),
             const SizedBox(height: 24),
 
-            // Writing Inspiration Card
+            // Inspiration Card
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0x4CF1F4F8),
+                color: colorScheme.surfaceVariant.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text(
                     "Writing Inspiration",
-                    style: TextStyle(
+                    style: textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
-                      color: Color(0xFF1D1D1F),
+                      color: colorScheme.onSurface,
                     ),
                   ),
-                  SizedBox(height: 12),
-                  Text("• Share how you are feeling in this moment",
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
-                  SizedBox(height: 8),
-                  Text("• Reflect on what you are grateful for",
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
-                  SizedBox(height: 8),
-                  Text("• Notice the small details around you",
-                      style: TextStyle(color: Color(0xFF64748B), fontSize: 14)),
+                  const SizedBox(height: 12),
+                  Text(
+                    "• Share how you are feeling in this moment",
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "• Reflect on what you are grateful for",
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    "• Notice the small details around you",
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
