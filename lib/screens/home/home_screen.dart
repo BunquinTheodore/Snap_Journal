@@ -10,49 +10,56 @@ import 'package:snap_journal/providers/entry_provider.dart';
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
-  String formatDateTime(DateTime dt) {
-    final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-    ];
-    final month = months[dt.month - 1];
-    final day = dt.day;
-    final year = dt.year;
+  String formatChipLabel(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
 
-    int hour = dt.hour;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final ampm = hour >= 12 ? 'PM' : 'AM';
-    if (hour == 0) {
-      hour = 12;
-    } else if (hour > 12) {
-      hour = hour - 12;
-    }
+    if (dt.isAfter(today)) return "Today";
+    if (dt.isAfter(yesterday)) return "Yesterday";
 
-    return '$month $day, $year • $hour:$minute $ampm';
+    final months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return "${months[dt.month - 1]} ${dt.day}";
   }
 
   @override
   Widget build(BuildContext context) {
     final entries = context.watch<EntryProvider>().entries;
     final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: Text(
-          "Snap Journal",
-          style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.menu_book, color: Colors.white, size: 20),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              "SnapJournal",
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: colorScheme.onSurface,
+              ),
+            ),
+          ],
+        ),
       ),
       body: entries.isEmpty
           ? Center(
               child: Text(
                 "No journal entries yet.\nTap + to add your first one!",
                 textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
+                style: TextStyle(
                   color: colorScheme.onSurfaceVariant,
                   fontSize: 16,
                 ),
@@ -61,18 +68,19 @@ class HomePage extends StatelessWidget {
           : ListView.separated(
               padding: const EdgeInsets.all(16),
               itemCount: entries.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final entry = entries[index];
-                return _buildEntryCard(context, entry, colorScheme, textTheme);
+                return _buildEntryCard(context, entry, colorScheme);
               },
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => Navigator.pushNamed(context, '/add_new_entry'),
         backgroundColor: colorScheme.primary,
-        foregroundColor: colorScheme.onPrimary,
-        child: const Icon(Icons.add),
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add, size: 28),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
@@ -80,13 +88,12 @@ class HomePage extends StatelessWidget {
     BuildContext context,
     Entry entry,
     ColorScheme colorScheme,
-    TextTheme textTheme,
   ) {
-    final created = entry.createdAt;
-    final title = (entry.title.isNotEmpty) ? entry.title : 'Untitled';
+    final title = entry.title.isNotEmpty ? entry.title : "Untitled";
     final contentPreview = entry.content.isNotEmpty
         ? entry.content
-        : (entry.imagePath != null ? 'Photo entry' : '');
+        : (entry.imagePath != null ? "Photo entry" : "");
+    final words = entry.content.split(RegExp(r'\s+')).where((w) => w.isNotEmpty).length;
 
     return InkWell(
       onTap: () async {
@@ -95,79 +102,107 @@ class HomePage extends StatelessWidget {
           '/view_entry',
           arguments: entry.id,
         );
-
         if (deleted == true) {
           await context.read<EntryProvider>().deleteEntry(entry.id);
         }
       },
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surface,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
           boxShadow: [
             BoxShadow(
-              color: colorScheme.shadow.withOpacity(0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (entry.imagePath != null && entry.imagePath!.isNotEmpty) ...[
+            if (entry.imagePath != null && entry.imagePath!.isNotEmpty)
               ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(16)),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  bottomLeft: Radius.circular(16),
+                ),
                 child: kIsWeb
                     ? Image.network(
                         entry.imagePath!,
-                        height: 160,
-                        width: double.infinity,
+                        width: 80,
+                        height: 80,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) =>
-                            Container(height: 160, color: colorScheme.surfaceVariant),
                       )
                     : Image.file(
                         File(entry.imagePath!),
-                        height: 160,
-                        width: double.infinity,
+                        width: 80,
+                        height: 80,
                         fit: BoxFit.cover,
                       ),
               ),
-            ],
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            formatChipLabel(entry.createdAt),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    contentPreview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 14,
+                    const SizedBox(height: 6),
+                    Text(
+                      contentPreview,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    formatDateTime(created),
-                    style: textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      fontSize: 12,
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.favorite_border,
+                            size: 14, color: colorScheme.primary),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$words words",
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ],

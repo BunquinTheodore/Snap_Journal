@@ -53,7 +53,7 @@ class ViewEntry extends StatelessWidget {
     final readingTime = (wordCount / 200).ceil(); // ~200 wpm
 
     return Scaffold(
-      backgroundColor: colors.background,
+      backgroundColor: colors.surface,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -74,7 +74,7 @@ class ViewEntry extends StatelessWidget {
                 entry.title,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w600,
-                      color: colors.onBackground,
+                      color: colors.onSurface,
                     ),
               ),
               const SizedBox(height: 24),
@@ -88,7 +88,7 @@ class ViewEntry extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       height: 1.62,
                       fontSize: 16,
-                      color: colors.onBackground,
+                      color: colors.onSurface,
                     ),
               ),
               const SizedBox(height: 24),
@@ -143,7 +143,7 @@ class EntryHeader extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color: colors.onBackground,
+                  color: colors.onSurface,
                 ),
           ),
           Row(
@@ -213,7 +213,7 @@ class EntryMetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: colors.surfaceVariant,
+        color: colors.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(50),
       ),
       child: Text(
@@ -300,7 +300,7 @@ class CapturedMomentCard extends StatelessWidget {
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w600,
                   fontSize: 18,
-                  color: colors.onBackground,
+                  color: colors.onSurface,
                 ),
           ),
           const SizedBox(height: 12),
@@ -380,7 +380,7 @@ class _StatItem extends StatelessWidget {
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 fontSize: 18,
-                color: colors.onBackground,
+                color: colors.onSurface,
               ),
         ),
       ],

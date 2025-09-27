@@ -85,10 +85,10 @@ class _EditEntryState extends State<EditEntry> {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: const Text("Edit Entry"),
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         actions: [
           TextButton.icon(

@@ -76,13 +76,13 @@ class _AddNewEntryState extends State<AddNewEntry> {
     final textTheme = Theme.of(context).textTheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.background,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         title: Text(
           "New Entry",
           style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
         ),
-        backgroundColor: colorScheme.background,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         automaticallyImplyLeading: true,
         actions: [
@@ -224,7 +224,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.surfaceVariant.withOpacity(0.4),
+                color: colorScheme.surfaceContainerHighest.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Column(
