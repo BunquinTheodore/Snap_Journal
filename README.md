@@ -31,15 +31,6 @@ It combines simplicity, beauty, and emotional depth — perfect for students, wr
 
 ---
 
-## 🖥️ Screenshots
-
-| Home Screen | Entry View | Create Entry |
-|--------------|-------------|---------------|
-| <img src="assets/screenshots/home.png" width="250"/> | <img src="assets/screenshots/entry_view.png" width="250"/> | <img src="assets/screenshots/create_entry.png" width="250"/> |
-
-*(Place your actual screenshots inside `assets/screenshots/`)*
-
----
 
 ## 🚀 Getting Started
 
