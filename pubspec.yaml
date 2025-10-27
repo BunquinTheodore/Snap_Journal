@@ -35,6 +35,10 @@ dependencies:
   uuid: ^4.1.0
 
   file_picker: ^8.1.2
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+  record: ^6.1.2
+  just_audio: ^0.10.5
 
 
 dev_dependencies:

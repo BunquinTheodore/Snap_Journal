@@ -22,13 +22,17 @@ class EntryAdapter extends TypeAdapter<Entry> {
       content: fields[2] as String,
       imagePath: fields[3] as String?,
       createdAt: fields[4] as DateTime,
+      latitude: fields[5] as double?,
+      longitude: fields[6] as double?,
+      audioPath: fields[7] as String?,
+      address: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Entry obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +42,15 @@ class EntryAdapter extends TypeAdapter<Entry> {
       ..writeByte(3)
       ..write(obj.imagePath)
       ..writeByte(4)
-      ..write(obj.createdAt);
+      ..write(obj.createdAt)
+      ..writeByte(5)
+      ..write(obj.latitude)
+      ..writeByte(6)
+      ..write(obj.longitude)
+      ..writeByte(7)
+      ..write(obj.audioPath)
+      ..writeByte(8)
+      ..write(obj.address);
   }
 
   @override

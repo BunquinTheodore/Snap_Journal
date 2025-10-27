@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'package:snap_journal/models/entry_model.dart';
 import 'package:snap_journal/providers/entry_provider.dart';
 import 'package:snap_journal/services/image_service.dart';
+import 'package:snap_journal/services/location_service.dart';
+import 'package:snap_journal/services/audio_service.dart';
 import 'package:uuid/uuid.dart';
 
 class AddNewEntry extends StatefulWidget {
@@ -21,11 +23,21 @@ class _AddNewEntryState extends State<AddNewEntry> {
 
   File? _selectedImage;
   late final ImageService _imageService;
+  late final LocationService _locationService;
+  late final AudioService _audioService;
+
+  double? _latitude;
+  double? _longitude;
+  String? _address;
+  String? _audioPath;
+  bool _isRecording = false;
 
   @override
   void initState() {
     super.initState();
     _imageService = ImageService();
+    _locationService = LocationService();
+    _audioService = AudioService();
   }
 
   Future<void> _pickFromGallery() async {
@@ -62,12 +74,57 @@ class _AddNewEntryState extends State<AddNewEntry> {
       content: content,
       imagePath: _selectedImage?.path,
       createdAt: DateTime.now(),
+      latitude: _latitude,
+      longitude: _longitude,
+      audioPath: _audioPath,
+      address: _address,
     );
 
     await Provider.of<EntryProvider>(context, listen: false).addEntry(newEntry);
 
     if (!mounted) return;
     Navigator.pop(context);
+  }
+
+  Future<void> _attachLocation() async {
+    final position = await _locationService.getCurrentPosition();
+    if (position == null) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Location not available")),
+      );
+      return;
+    }
+    final addr = await _locationService.getAddressFrom(position);
+    if (!mounted) return;
+    setState(() {
+      _latitude = position.latitude;
+      _longitude = position.longitude;
+      _address = addr;
+    });
+  }
+
+  Future<void> _toggleRecording() async {
+    if (_isRecording) {
+      final path = await _audioService.stopRecording();
+      if (!mounted) return;
+      setState(() {
+        _isRecording = false;
+        _audioPath = path;
+      });
+      return;
+    }
+    final startedPath = await _audioService.startRecording();
+    if (!mounted) return;
+    if (startedPath == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Microphone permission denied")),
+      );
+      return;
+    }
+    setState(() {
+      _isRecording = true;
+    });
   }
 
   @override
@@ -134,6 +191,7 @@ class _AddNewEntryState extends State<AddNewEntry> {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
+                    // ignore: deprecated_member_use
                     color: colorScheme.shadow.withOpacity(0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
@@ -193,6 +251,48 @@ class _AddNewEntryState extends State<AddNewEntry> {
                     child: const Text(
                       "Choose from Gallery",
                       style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _attachLocation,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.surface,
+                      foregroundColor: colorScheme.onSurface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: colorScheme.outline),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 24),
+                    ),
+                    child: Text(
+                      _address != null
+                          ? "Location Added"
+                          : "Add Location",
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _toggleRecording,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          _isRecording ? colorScheme.primary : colorScheme.surface,
+                      foregroundColor:
+                          _isRecording ? colorScheme.onPrimary : colorScheme.onSurface,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        side: BorderSide(color: colorScheme.outline),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 14, horizontal: 24),
+                    ),
+                    child: Text(
+                      _isRecording
+                          ? "Stop Recording"
+                          : (_audioPath != null ? "Re-record Voice Note" : "Record Voice Note"),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

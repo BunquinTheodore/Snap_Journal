@@ -19,12 +19,28 @@ class Entry extends HiveObject {
   @HiveField(4)
   DateTime createdAt;
 
+  @HiveField(5)
+  double? latitude;
+
+  @HiveField(6)
+  double? longitude;
+
+  @HiveField(7)
+  String? audioPath;
+
+  @HiveField(8)
+  String? address;
+
   Entry({
     required this.id,
     required this.title,
     required this.content,
     this.imagePath,
     required this.createdAt,
+    this.latitude,
+    this.longitude,
+    this.audioPath,
+    this.address,
   });
 
   /// ✅ Add copyWith for safe updates
@@ -34,6 +50,10 @@ class Entry extends HiveObject {
     String? content,
     String? imagePath,
     DateTime? createdAt,
+    double? latitude,
+    double? longitude,
+    String? audioPath,
+    String? address,
   }) {
     return Entry(
       id: id ?? this.id,
@@ -41,6 +61,10 @@ class Entry extends HiveObject {
       content: content ?? this.content,
       imagePath: imagePath ?? this.imagePath,
       createdAt: createdAt ?? this.createdAt,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      audioPath: audioPath ?? this.audioPath,
+      address: address ?? this.address,
     );
   }
 }

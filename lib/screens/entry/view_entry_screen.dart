@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:snap_journal/models/entry_model.dart';
 import 'package:snap_journal/providers/entry_provider.dart';
+import 'package:just_audio/just_audio.dart';
 
 class ViewEntry extends StatelessWidget {
   final String entryId;
@@ -83,6 +84,31 @@ class ViewEntry extends StatelessWidget {
               else
                 const SizedBox.shrink(),
               const SizedBox(height: 24),
+              if (entry.address != null || (entry.latitude != null && entry.longitude != null))
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.place, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        entry.address != null && entry.address!.isNotEmpty
+                            ? entry.address!
+                            : "${entry.latitude?.toStringAsFixed(5)}, ${entry.longitude?.toStringAsFixed(5)}",
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: true,
+                      ),
+                    ),
+                  ],
+                ),
+              if (entry.address != null || (entry.latitude != null && entry.longitude != null))
+                const SizedBox(height: 24),
+              if (entry.audioPath != null && entry.audioPath!.isNotEmpty)
+                AudioPlayerCard(audioPath: entry.audioPath!),
+              if (entry.audioPath != null && entry.audioPath!.isNotEmpty)
+                const SizedBox(height: 24),
               Text(
                 entry.content,
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -312,6 +338,120 @@ class CapturedMomentCard extends StatelessWidget {
                   height: 1.62,
                   color: colors.onSurfaceVariant,
                 ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AudioPlayerCard extends StatefulWidget {
+  final String audioPath;
+  const AudioPlayerCard({super.key, required this.audioPath});
+
+  @override
+  State<AudioPlayerCard> createState() => _AudioPlayerCardState();
+}
+
+class _AudioPlayerCardState extends State<AudioPlayerCard> {
+  late final AudioPlayer _player;
+  bool _isLoading = true;
+  Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _player = AudioPlayer();
+    _setup();
+  }
+
+  Future<void> _setup() async {
+    try {
+      await _player.setFilePath(widget.audioPath);
+      _duration = _player.duration ?? Duration.zero;
+      _player.positionStream.listen((pos) {
+        if (mounted) setState(() => _position = pos);
+      });
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  String _fmt(Duration d) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final m = two(d.inMinutes.remainder(60));
+    final s = two(d.inSeconds.remainder(60));
+    final h = d.inHours;
+    return h > 0 ? "$h:$m:$s" : "$m:$s";
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colors.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                onPressed: _isLoading
+                    ? null
+                    : () async {
+                        if (_player.playing) {
+                          await _player.pause();
+                        } else {
+                          await _player.play();
+                        }
+                        if (mounted) setState(() {});
+                      },
+                icon: Icon(
+                  _player.playing ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                  size: 32,
+                  color: colors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    LinearProgressIndicator(
+                      value: (_duration.inMilliseconds == 0)
+                          ? null
+                          : (_position.inMilliseconds / _duration.inMilliseconds)
+                              .clamp(0.0, 1.0),
+                      backgroundColor: colors.surfaceContainerHighest,
+                      color: colors.primary,
+                      minHeight: 6,
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(_fmt(_position),
+                            style: Theme.of(context).textTheme.bodySmall),
+                        Text(_fmt(_duration),
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
