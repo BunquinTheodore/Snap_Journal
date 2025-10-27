@@ -183,23 +183,16 @@ class _AddNewEntryState extends State<AddNewEntry> {
             ),
             const SizedBox(height: 24),
 
-            // Image picker
+            // Image & actions
             Container(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: colorScheme.surface,
+                color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.4),
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    // ignore: deprecated_member_use
-                    color: colorScheme.shadow.withOpacity(0.05),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-                border: Border.all(color: colorScheme.outline, width: 1),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (_selectedImage != null) ...[
                     ClipRRect(
@@ -216,84 +209,82 @@ class _AddNewEntryState extends State<AddNewEntry> {
                               fit: BoxFit.cover,
                             ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    const SizedBox(height: 4),
                   ],
-                  ElevatedButton(
-                    onPressed: _takePhoto,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.surface,
-                      foregroundColor: colorScheme.onSurface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: colorScheme.outline),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 24),
-                    ),
-                    child: const Text(
-                      "Take Photo",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
+
+                  // Take Photo
+                  ListTile(
+                    leading: Icon(Icons.camera_alt_outlined, color: colorScheme.primary),
+                    title: const Text("Take Photo", style: TextStyle(fontWeight: FontWeight.w600)),
+                    onTap: _takePhoto,
+                    dense: false,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _pickFromGallery,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.surface,
-                      foregroundColor: colorScheme.onSurface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: colorScheme.outline),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 24),
-                    ),
-                    child: const Text(
-                      "Choose from Gallery",
-                      style: TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                  const Divider(height: 1),
+
+                  // Choose from Gallery
+                  ListTile(
+                    leading: Icon(Icons.photo_library_outlined, color: colorScheme.primary),
+                    title: const Text("Choose from Gallery", style: TextStyle(fontWeight: FontWeight.w600)),
+                    onTap: _pickFromGallery,
+                    dense: false,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _attachLocation,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: colorScheme.surface,
-                      foregroundColor: colorScheme.onSurface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: colorScheme.outline),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 24),
+                  const Divider(height: 1),
+
+                  // Add Location
+                  ListTile(
+                    leading: Icon(Icons.place_outlined, color: colorScheme.primary),
+                    title: const Text("Add Location", style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(
+                      _address ?? "Attach your current location",
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
-                    child: Text(
-                      _address != null
-                          ? "Location Added"
-                          : "Add Location",
-                      style: const TextStyle(fontWeight: FontWeight.w600),
-                    ),
+                    trailing: _address != null
+                        ? Chip(
+                            label: const Text("Added"),
+                            backgroundColor: colorScheme.primary.withOpacity(0.1),
+                            labelStyle: TextStyle(color: colorScheme.primary),
+                          )
+                        : null,
+                    onTap: _attachLocation,
+                    dense: false,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _toggleRecording,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          _isRecording ? colorScheme.primary : colorScheme.surface,
-                      foregroundColor:
-                          _isRecording ? colorScheme.onPrimary : colorScheme.onSurface,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: colorScheme.outline),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                          vertical: 14, horizontal: 24),
-                    ),
-                    child: Text(
+                  const Divider(height: 1),
+
+                  // Record Voice Note
+                  ListTile(
+                    leading: Icon(Icons.mic_none_outlined,
+                        color: _isRecording ? colorScheme.onPrimary : colorScheme.primary),
+                    title: Text(
                       _isRecording
                           ? "Stop Recording"
                           : (_audioPath != null ? "Re-record Voice Note" : "Record Voice Note"),
                       style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
+                    trailing: _isRecording
+                        ? Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: colorScheme.error.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Text("Recording...",
+                                style: TextStyle(color: colorScheme.error, fontSize: 12)),
+                          )
+                        : (_audioPath != null
+                            ? Chip(
+                                label: const Text("Voice note added"),
+                                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                                labelStyle: TextStyle(color: colorScheme.primary),
+                              )
+                            : null),
+                    onTap: _toggleRecording,
+                    dense: false,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 4),
                   ),
                 ],
               ),

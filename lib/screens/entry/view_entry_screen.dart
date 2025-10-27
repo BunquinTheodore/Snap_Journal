@@ -459,6 +459,63 @@ class _AudioPlayerCardState extends State<AudioPlayerCard> {
   }
 }
 
+class AudioInfoChip extends StatefulWidget {
+  final String audioPath;
+  const AudioInfoChip({super.key, required this.audioPath});
+
+  @override
+  State<AudioInfoChip> createState() => _AudioInfoChipState();
+}
+
+class _AudioInfoChipState extends State<AudioInfoChip> {
+  final AudioPlayer _player = AudioPlayer();
+  String _label = "Audio";
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      await _player.setFilePath(widget.audioPath);
+      final d = _player.duration;
+      if (d != null) {
+        String two(int n) => n.toString().padLeft(2, '0');
+        final String text = d.inHours > 0
+            ? "${d.inHours}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}"
+            : "${two(d.inMinutes)}:${two(d.inSeconds % 60)}";
+        if (mounted) setState(() {
+          _label = "Audio $text";
+          _loaded = true;
+        });
+      }
+    } catch (_) {
+      // keep default label
+    }
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Chip(
+      label: Text(_label),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      backgroundColor: colors.secondary.withOpacity(0.08),
+      labelStyle: TextStyle(color: colors.secondary),
+      side: BorderSide(color: colors.secondary.withOpacity(0.2)),
+    );
+  }
+}
+
 class EntryStats extends StatelessWidget {
   final int wordCount;
   final String readingTime;
