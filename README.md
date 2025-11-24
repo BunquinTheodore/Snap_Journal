@@ -1,4 +1,4 @@
-# snap_journal
+# snap_journal hihihi
 
 A new Flutter project.
 
